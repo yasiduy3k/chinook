@@ -1,0 +1,144 @@
+﻿@page "/playlist/{PlaylistId:long}"
+@attribute [Authorize]
+
+@using Chinook.Models
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims;
+@using Chinook.IServices
+@using Chinook.Statics
+
+<h1>Playlist <strong>@Playlist.Name</strong></h1>
+
+@if (!string.IsNullOrWhiteSpace(InfoMessage))
+{
+    <div class="alert alert-info fade show">
+        <div class="d-flex align-items-start">
+            <div class="flex-grow-1">
+                @InfoMessage
+            </div>
+            <button type="button" class="btn-close" aria-label="Close" @onclick="CloseInfoMessage"></button>
+        </div>
+    </div>
+}
+
+@if (Playlist == null)
+{
+    <Loading />
+}
+else
+{
+    <table class="table table-striped table-hover table-sm">
+        <thead>
+            <tr>
+                <th>Track</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var track in Playlist.Tracks)
+            {
+                <tr>
+                    <td>@track.ArtistName - @track.AlbumTitle - @track.TrackName</td>
+                    <td>
+                        <div class="d-flex">
+                            <!-- ----- Using the constant defined to track the playlist name. Readme gives one name but code had one name. ------- -->
+                            @if (Playlist.Name != Constants.FavouritePlayListName)
+                            {
+                                @if (track.IsFavorite)
+                                {
+                                    <a href="#" class="m-1" title="Unark as favorite" @onclick="@(() => UnfavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star-fill"></i></a>
+                                }
+                                else
+                                {
+                                    <a href="#" class="m-1" title="Mark as favorite" @onclick="@(() => FavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star"></i></a>
+                                }
+
+                            }
+                            <a href="#" class="m-1" title="Remove from this playlist" @onclick="@(() => RemoveTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-trash"></i></a>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter] public long PlaylistId { get; set; }
+    //[Inject] IDbContextFactory<ChinookContext> DbFactory { get; set; }
+
+    //-----  Injecting the services ----------------------
+    [Inject] ITrackService TrackService { get; set; }
+    [Inject] IPlaylistService PlaylistService { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> authenticationState { get; set; }
+
+    private Chinook.ClientModels.Playlist Playlist;
+    private string CurrentUserId;
+    private string InfoMessage;
+
+
+    //----- This was teseted by using the direct url with a playlist number -----
+    //----------- https://localhost:7295/playlist/20 ---------------
+    // Please note did not handle for instances of using playlist number not available in db
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUserId = await GetUserId();
+        await InvokeAsync(StateHasChanged);
+        //------- Loading play list -----------------------------
+        Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
+    }
+
+    private async Task<string> GetUserId()
+    {
+        var user = (await authenticationState).User;
+        var userId = user.FindFirst(u => u.Type.Contains(ClaimTypes.NameIdentifier))?.Value;
+        return userId;
+    }
+    /// <summary>
+    /// Add to my favourite playlist
+    /// </summary>
+    /// <param name="trackId"></param>
+    private async void FavoriteTrack(long trackId)
+    {
+        var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
+
+        // TODO: add track to Favorites playlist
+        // ------ Reusing the services written -----------------
+        var message = await TrackService.AddToMyFavourite(trackId, CurrentUserId);        
+        Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
+        InfoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} {message}";
+    }
+    /// <summary>
+    /// Remove from my favourite playlist
+    /// </summary>
+    /// <param name="trackId"></param>
+    private async void UnfavoriteTrack(long trackId)
+    {
+        var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
+
+        // TODO: remove track from Favorites playlist
+        // ------ Reusing the services written -----------------
+        var message = await TrackService.RemoveFromMyFavourite(trackId, CurrentUserId);
+        Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
+        InfoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} {message}";
+    }
+    /// <summary>
+    /// Remove the track from the viewed playlist
+    /// </summary>
+    /// <param name="trackId"></param>
+    private async void RemoveTrack(long trackId)
+    {
+        // TODO
+        // --------- Remove the track from playlist and reload the playlist --------
+        var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
+        var message = await PlaylistService.RemoveTrack(PlaylistId, trackId);
+        Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
+        InfoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} of playlist {Playlist.Name} {message}";
+    }
+
+    private void CloseInfoMessage()
+    {
+        InfoMessage = "";
+    }
+
+}
