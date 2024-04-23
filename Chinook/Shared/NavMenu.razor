@@ -1,4 +1,8 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using Chinook.Models
+@using Chinook.IServices;
+@using System.Security.Claims
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Chinook</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -14,18 +18,38 @@
                 <span class="oi oi-home" aria-hidden="true"></span>Home
             </NavLink>
         </div>
-        <div class="nav-item px-3">
-@* 
+        <div class="nav-item px-3" style=" height: 500px; overflow-y: auto;">
+            <hr style="color:white" />
+            <p style="color:#d7d7d7">My Playlists</p>
+            <hr style="color:white" />
+            @*
             <NavLink class="nav-link" href="playlist/playlistnumber">
-                <i class="bi bi-music-note-list me-3" style="font-size: 1.25em"></i>My favorite tracks
+            <i class="bi bi-music-note-list me-3" style="font-size: 1.25em"></i>My favorite tracks
             </NavLink>
-*@
-</div>
+            *@
+
+            @foreach (var playlist in SelectedPlaylists)
+            {
+                var link = "playlist/" + @playlist.PlaylistId;
+
+                <NavLink class="nav-link" href="@link">
+                    <!--href="playlist/0"-->
+                    <i class="bi bi-music-note-list me-3" style="font-size: 1.25em"></i>@playlist.Name
+                </NavLink>
+            }
+        </div>
 
     </nav>
 </div>
 
+
 @code {
+    [Inject] IPlaylistService PlaylistService { get; set; }
+    [Inject] IRefreshNavService RefreshNavService { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> authenticationState { get; set; }
+    private List<Models.Playlist> SelectedPlaylists;
+
+    private string CurrentUserId;
     private bool collapseNavMenu = true;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
@@ -33,5 +57,35 @@
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await InvokeAsync(StateHasChanged);
+        CurrentUserId = await GetUserId();
+        //----------- Load values from the backend --------------
+        SelectedPlaylists = await PlaylistService.GetPlaylistsOfUser(CurrentUserId);
+
+        // Un subscrib from event
+        RefreshNavService.RefreshRequested -= RefreshAndRenderNavMenu;
+        // subscribe to event
+        RefreshNavService.RefreshRequested += RefreshAndRenderNavMenu;
+    }
+
+    private async Task<string> GetUserId()
+    {
+        var user = (await authenticationState).User;
+        var userId = user.FindFirst(u => u.Type.Contains(ClaimTypes.NameIdentifier))?.Value;
+        return userId;
+    }
+
+    /// <summary>
+    /// Event used to refresh navigation panel to load playlists.
+    /// </summary>
+    private async void RefreshAndRenderNavMenu()
+    {
+        //----------- Load values from the backend --------------
+        SelectedPlaylists = await PlaylistService.GetPlaylistsOfUser(CurrentUserId);
+        await InvokeAsync(StateHasChanged);
     }
 }

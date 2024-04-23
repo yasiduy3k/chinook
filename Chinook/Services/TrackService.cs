@@ -42,6 +42,8 @@ namespace Chinook.Services
                     TrackName = t.Name,
                     IsFavorite = t.Playlists.Where(p => p.UserPlaylists.Any(up => up.UserId == currentUserId && up.Playlist.Name == Constants.FavouritePlayListName)).Any()
                 })
+                .OrderBy(a => a.AlbumTitle) //Lets order for easy reference
+                    .ThenBy(a=>a.TrackName)
                 .ToList();
                 return playlistTracks;
             }

@@ -1,0 +1,13 @@
+https://stackoverflow.com/questions/55775060/blazor-component-refresh-parent-when-model-is-updated-from-child-component
+
+https://stackoverflow.com/questions/59568084/navlink-updating-url-but-does-not-reloading-page-in-blazor
+
+https://www.learnblazor.com/cascading-values#:~:text=In%20any%20reasonably%20complex%20scenario,descendant%20components%20in%20a%20hierarchy.
+
+https://learn.microsoft.com/en-us/answers/questions/340399/how-can-i-get-the-(input-)-value-in-a-blazor-razor
+
+https://chanmingman.wordpress.com/2020/04/29/blazor-get-value-from-textbox
+
+https://stackoverflow.com/questions/54044061/how-to-redirect-to-a-different-route-in-blazor-server-side
+
+https://stackoverflow.com/questions/1668451/use-linq-to-move-item-to-top-of-list

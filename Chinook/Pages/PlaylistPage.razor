@@ -1,5 +1,6 @@
 ﻿@page "/playlist/{PlaylistId:long}"
 @attribute [Authorize]
+@inject NavigationManager NavigationManager
 
 @using Chinook.Models
 @using Microsoft.EntityFrameworkCore
@@ -7,7 +8,9 @@
 @using Chinook.IServices
 @using Chinook.Statics
 
-<h1>Playlist <strong>@Playlist.Name</strong></h1>
+<div>
+    <h1>Playlist <strong>@Playlist.Name</strong> <a href="#" style="float:right" class="m-1" title="Remove playlist" @onclick="@(() => DeletePlayList())" @onclick:preventDefault><i class="bi bi-trash"></i></a></h1>
+</div>
 
 @if (!string.IsNullOrWhiteSpace(InfoMessage))
 {
@@ -70,6 +73,7 @@ else
     //-----  Injecting the services ----------------------
     [Inject] ITrackService TrackService { get; set; }
     [Inject] IPlaylistService PlaylistService { get; set; }
+    [Inject] IRefreshNavService RefreshNavService { get; set; }
     [CascadingParameter] private Task<AuthenticationState> authenticationState { get; set; }
 
     private Chinook.ClientModels.Playlist Playlist;
@@ -87,7 +91,11 @@ else
         //------- Loading play list -----------------------------
         Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
     }
-
+    protected override async Task OnParametersSetAsync()
+    {
+        //----------- Load values from the backend --------------
+        Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
+    }
     private async Task<string> GetUserId()
     {
         var user = (await authenticationState).User;
@@ -107,6 +115,8 @@ else
         var message = await TrackService.AddToMyFavourite(trackId, CurrentUserId);        
         Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
         InfoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} {message}";
+        //Triger call back event to update nav menu
+        RefreshNavService.CallRequestRefresh();
     }
     /// <summary>
     /// Remove from my favourite playlist
@@ -139,6 +149,17 @@ else
     private void CloseInfoMessage()
     {
         InfoMessage = "";
+    }
+
+    /// <summary>
+    /// Delete playlist
+    /// </summary>
+    private async void DeletePlayList()
+    {
+        await PlaylistService.DeletePlayList(PlaylistId);
+        //Triger call back event to update nav menu
+        RefreshNavService.CallRequestRefresh();
+        NavigationManager.NavigateTo("/");
     }
 
 }

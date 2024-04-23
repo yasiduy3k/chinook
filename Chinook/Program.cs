@@ -22,6 +22,7 @@ builder.Services.AddSingleton<IAlbumService, AlbumService>();
 builder.Services.AddSingleton<IDBContextService, DbContextService>();
 builder.Services.AddSingleton<ITrackService, TrackService>();
 builder.Services.AddSingleton<IPlaylistService, PlaylistService>();
+builder.Services.AddSingleton<IRefreshNavService, RefreshNavService>();
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();

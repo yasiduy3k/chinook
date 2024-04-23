@@ -43,7 +43,11 @@ namespace Chinook.Services
                        TrackId = t.TrackId,
                        TrackName = t.Name,
                        IsFavorite = t.Playlists.Where(p => p.UserPlaylists.Any(up => up.UserId == userId && up.Playlist.Name == Constants.FavouritePlayListName)).Any()
-                   }).ToList()
+                   })
+                   .OrderBy(t => t.ArtistName) //Lets order for easy reference
+                    .ThenBy(t => t.AlbumTitle)
+                    .ThenBy(t => t.TrackName)
+                   .ToList()
                })
                .FirstOrDefault();
                 return playlist;
@@ -116,6 +120,8 @@ namespace Chinook.Services
                 var playlists = dbContext.Playlists
                     .Include(p => p.UserPlaylists)
                     .Where(p => p.UserPlaylists.Any(up => up.UserId == userId))
+                    .OrderByDescending(p=>p.Name==Constants.FavouritePlayListName) //Order to keep fav playlist always as the top
+                    .ThenBy(p => p.Name)
                     .ToList();
                 return playlists;
             }
@@ -220,6 +226,44 @@ namespace Chinook.Services
             }
 
             return message;
+        }
+
+        /// <summary>
+        /// Delete a playlist completely
+        /// </summary>
+        /// <param name="playlistId"></param>
+        /// <returns></returns>
+        public async Task DeletePlayList(long playlistId)
+        {
+            try
+            {
+                var dbContext = await dbContextService.GetContextAsync();
+                var playlist = dbContext.Playlists
+                              .Include(p => p.Tracks)
+                              .Include(p => p.UserPlaylists)
+                              .FirstOrDefault(p => p.PlaylistId == playlistId);
+
+                if (playlist != null)
+                {
+                    //Remove tracks
+                    foreach (var item in playlist.Tracks)
+                    {
+                        playlist.Tracks.Remove(item);
+                    }
+                    //Remove from user playlists
+                    foreach (var item in playlist.UserPlaylists)
+                    {
+                        playlist.UserPlaylists.Remove(item);
+                    }
+                    //Remove from playlists
+                    dbContext.Playlists.Remove(playlist);
+                    dbContext.SaveChanges();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"Method: DeletePlayList - Inner: {ex.InnerException} - Message: {ex.Message} - Stack: {ex.StackTrace}", ex);
+            }
         }
     }
 }

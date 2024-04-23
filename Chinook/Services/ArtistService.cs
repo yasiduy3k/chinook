@@ -28,13 +28,16 @@ namespace Chinook.Services
                 //----- If searchFilter has no value fetch all else filter -----
                 if (string.IsNullOrWhiteSpace(searchFilter))
                 {
-                    return dbContext.Artists.Include(a => a.Albums).ToList();
+                    return dbContext.Artists.Include(a => a.Albums)
+                        .OrderBy(a=>a.Name)
+                        .ToList();
                 }
                 else
                 {
                     return dbContext.Artists
-                        .Where(a => a.Name!=null && a.Name.ToLower().Contains(searchFilter.ToLower()))
                         .Include(a => a.Albums)
+                        .Where(a => a.Name!=null && a.Name.ToLower().Contains(searchFilter.ToLower()))
+                        .OrderBy(a => a.Name)
                         .ToList();
                 }
             }

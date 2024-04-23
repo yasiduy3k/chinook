@@ -98,6 +98,7 @@ else
     [Inject] IArtistService ArtistService { get; set; }
     [Inject] ITrackService TrackService { get; set; }
     [Inject] IPlaylistService PlaylistService { get; set; }
+    [Inject] IRefreshNavService RefreshNavService { get; set; }
     private Modal PlaylistDialog { get; set; }
 
     private Artist Artist;
@@ -148,6 +149,8 @@ else
         var message = await TrackService.AddToMyFavourite(trackId, CurrentUserId);
         Tracks = await TrackService.GetPlaylistTracks(ArtistId, CurrentUserId);
         InfoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} {message}";
+        //Triger call back event to update nav menu
+        RefreshNavService.CallRequestRefresh();
     }
     /// <summary>
     /// Remove from my favourite playlist
@@ -167,7 +170,10 @@ else
     private void OpenPlaylistDialog(long trackId)
     {
         CloseInfoMessage();
-        SelectedTrack = Tracks.FirstOrDefault(t => t.TrackId == trackId);
+        if (Tracks.Any())
+        {
+            SelectedTrack = Tracks.First(t => t.TrackId == trackId);
+        }
         PlaylistDialog.Open();
     }
 
@@ -183,7 +189,10 @@ else
         var message = await PlaylistService.AddTrackToPlayList(SelectedTrack.TrackId, SelectedPlaylistId, PlaylistName, CurrentUserId);
         InfoMessage = $"Track {Artist.Name} - {SelectedTrack.AlbumTitle} - {SelectedTrack.TrackName} {message}.";
         SelectedPlaylists = await PlaylistService.GetPlaylistsOfUser(CurrentUserId);
+        PlaylistName = string.Empty;
         PlaylistDialog.Close();
+        //Triger call back event to update nav menu
+        RefreshNavService.CallRequestRefresh();
     }
     /// <summary>
     /// Method for capturing playlist dropdown change
