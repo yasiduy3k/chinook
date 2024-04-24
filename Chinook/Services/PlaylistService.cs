@@ -200,7 +200,7 @@ namespace Chinook.Services
                     }
                     else if (playlist.Tracks.Any(t => t.TrackId == trackId))
                     {
-                        message = " not added since track is already existing";
+                        message = $" not added since track is already existing in playist {playlist.Name}";
                     }
                     else
                     {
@@ -214,14 +214,14 @@ namespace Chinook.Services
                             dbContext.Playlists.Add(playlist);
                         }
                         dbContext.SaveChanges();
-                        message = " sucessfully added.";
+                        message = $" sucessfully added to playlist {playlist.Name}";
                     }
                 }
                 return message;
             }
             catch (Exception ex)
             {
-                logger.LogError($"Method: GetPlaylistsOfUser - Inner: {ex.InnerException} - Message: {ex.Message} - Stack: {ex.StackTrace}", ex);
+                logger.LogError($"Method: AddTrackToPlayList - Inner: {ex.InnerException} - Message: {ex.Message} - Stack: {ex.StackTrace}", ex);
                 message = $" was terminated. Please try again in a few minutes.";
             }
 
