@@ -11,3 +11,7 @@ https://chanmingman.wordpress.com/2020/04/29/blazor-get-value-from-textbox
 https://stackoverflow.com/questions/54044061/how-to-redirect-to-a-different-route-in-blazor-server-side
 
 https://stackoverflow.com/questions/1668451/use-linq-to-move-item-to-top-of-list
+
+https://stackoverflow.com/questions/61974231/enable-disable-button-based-on-text-input-in-blazor-server-side
+
+https://www.syncfusion.com/faq/how-do-i-set-the-default-value-in-select-control
