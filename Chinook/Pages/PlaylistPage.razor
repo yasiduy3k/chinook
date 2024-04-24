@@ -95,6 +95,7 @@ else
     {
         //----------- Load values from the backend --------------
         Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
+        CloseInfoMessage();
     }
     private async Task<string> GetUserId()
     {

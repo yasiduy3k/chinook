@@ -70,8 +70,13 @@ else
 
         <div class="mb-2">
             <label for="ExistingPlaylist">Add to existing playlist</label>
-            @*---- Using onchange method to track select value ---------*@
-            <select class="form-control" id="ExistingPlaylist" @onchange="OnPlayListChanghe">
+            @*---- Using @bind attribute to track select value instead of onchange---------*@
+            <select class="form-control" id="ExistingPlaylist" @bind="SelectedPlaylistId">
+                @* Empty option to be displayed till a valid selection is done *@
+                @if (SelectedPlaylistId == -1)
+                {
+                    <option value="-1"></option>
+                }
                 @foreach (var playlist in SelectedPlaylists)
                 {
                     <option value="@playlist.PlaylistId">@playlist.Name</option>
@@ -81,11 +86,19 @@ else
         <div class="mb-2">
             <label for="NewPlaylist">Create new playlist</label>
             <!-- ------ Binding the text field to PlayListName ----------- -->
-            <input type="text" id="NewPlaylist" class="form-control" @bind="PlaylistName" placeholder="Name for the new playlist">
+            <input type="text" id="NewPlaylist" @bind:event="oninput" class="form-control" @bind="PlaylistName" placeholder="Name for the new playlist">
         </div>
     </Body>
     <Footer>
-        <button class="btn btn-success" @onclick="AddTrackToPlaylist">Save</button>
+        @if (DisableByDropDown && DisableByText)
+        {
+            <button class="btn btn-success" @onclick="AddTrackToPlaylist" disabled>Save</button>
+        }
+        else
+        {
+            <button class="btn btn-success" @onclick="AddTrackToPlaylist">Save</button>
+        }
+
     </Footer>
 </Modal>
 
@@ -106,27 +119,51 @@ else
     //private DbContext DbContext;
     private PlaylistTrack SelectedTrack;
     private List<Models.Playlist> SelectedPlaylists;
-    public long SelectedPlaylistId { get; set; }
     private string InfoMessage;
     private string CurrentUserId;
-    private string PlaylistName;
+
+    private bool DisableByText, DisableByDropDown;
+    private long _selecedPlaylistId;
+    public long SelectedPlaylistId
+    {
+        get { return _selecedPlaylistId; }
+        set
+        {
+            _selecedPlaylistId = value;
+            DisableByDropDown = _selecedPlaylistId < 0 ? true : false;
+        }
+    }
+    private string _playlistName;
+    private string PlaylistName
+    {
+        get { return _playlistName; }
+        set
+        {
+            _playlistName = value;
+            DisableByText = _playlistName?.Length < 1 ? true : false;
+        }
+
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        SelectedPlaylistId = 0;
+        SelectedPlaylistId = -1;
+        DisableByDropDown = true;
+        DisableByText = true;
         await InvokeAsync(StateHasChanged);
         CurrentUserId = await GetUserId();
         //----------- Load values from the backend --------------
         Artist = await ArtistService.GetArtistById(ArtistId);
         Tracks = await TrackService.GetPlaylistTracks(ArtistId, CurrentUserId);
         SelectedPlaylists = await PlaylistService.GetPlaylistsOfUser(CurrentUserId);
-        //------------ Set the first element's id of the list as the default playlist -------------
+
+        /* //------------ Set the first element's id of the list as the default playlist -------------
         if (SelectedPlaylists.Any())
         {
             SelectedPlaylistId = SelectedPlaylists
             .First()
             .PlaylistId;
-        }
+        }*/
     }
 
     private async Task<string> GetUserId()
@@ -174,6 +211,8 @@ else
         {
             SelectedTrack = Tracks.First(t => t.TrackId == trackId);
         }
+        SelectedPlaylistId = -1;
+        PlaylistName = string.Empty;
         PlaylistDialog.Open();
     }
 
@@ -191,20 +230,23 @@ else
         SelectedPlaylists = await PlaylistService.GetPlaylistsOfUser(CurrentUserId);
         PlaylistName = string.Empty;
         PlaylistDialog.Close();
+        SelectedPlaylistId = -1;
         //Triger call back event to update nav menu
         RefreshNavService.CallRequestRefresh();
     }
+
     /// <summary>
     /// Method for capturing playlist dropdown change
     /// </summary>
     /// <param name="e"></param>
-    private void OnPlayListChanghe(ChangeEventArgs e)
+    /* private void OnPlayListChanghe(ChangeEventArgs e)
     {
         // ------ To capture playlist id change from the dropdown ------
-        long playlistId = 0;
-        long.TryParse(e?.Value?.ToString(), out playlistId);
+        //long playlistId = 0;
+        long.TryParse(e?.Value?.ToString(), out long playlistId);
         SelectedPlaylistId = playlistId;
-    }
+        DisableByDropDown = !SelectedPlaylists.Any(p => p.PlaylistId == playlistId);
+    }*/
 
     private void CloseInfoMessage()
     {
