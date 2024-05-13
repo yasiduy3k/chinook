@@ -1,6 +1,6 @@
 namespace Chinook.ClientModels;
 
-public class PlaylistTrack
+public class PlaylistTrackCM
 {
     public long TrackId { get; set; }
     public string TrackName { get; set; }

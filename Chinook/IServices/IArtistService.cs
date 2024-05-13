@@ -5,7 +5,7 @@ namespace Chinook.IServices
 {
     public interface IArtistService
     {
-        Task<List<Artist>> GetArtists(string searchFilter);
-        Task<Artist> GetArtistById(long artistId);
+        Task<List<ArtistCM>> GetArtists(string searchFilter);
+        Task<ArtistCM> GetArtistById(long artistId);
     }
 }

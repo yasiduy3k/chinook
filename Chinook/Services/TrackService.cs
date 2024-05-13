@@ -27,7 +27,7 @@ namespace Chinook.Services
         /// <param name="currentUserId"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public async Task<List<PlaylistTrack>> GetPlaylistTracks(long artistId, string currentUserId)
+        public async Task<List<PlaylistTrackCM>> GetPlaylistTracks(long artistId, string currentUserId)
         {
             try
             {
@@ -35,7 +35,7 @@ namespace Chinook.Services
                 var playlistTracks = dbContext.Tracks
                 .Include(a => a.Album)
                 .Where(a => a.Album!=null && a.Album.ArtistId == artistId)
-                .Select(t => new PlaylistTrack()
+                .Select(t => new PlaylistTrackCM()
                 {
                     AlbumTitle = (t.Album == null ? "-" : t.Album.Title),
                     TrackId = t.TrackId,
@@ -92,7 +92,7 @@ namespace Chinook.Services
                             UserPlaylists = new List<UserPlaylist>(),
                             PlaylistId= playlistId
                         };
-                        favPlaylist.UserPlaylists.Add(new UserPlaylist() { Playlist = favPlaylist, UserId = userId });
+                        favPlaylist.UserPlaylists.Add(new UserPlaylist() { UserId = userId });
                         favPlaylist.Tracks.Add(track);
                         dbContext.Playlists.Add(favPlaylist);
                         dbContext.SaveChanges();

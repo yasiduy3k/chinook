@@ -1,6 +1,7 @@
 ﻿@page "/"
 @attribute [Authorize]
 
+@using Chinook.ClientModels
 @using Chinook.Models
 @using Chinook.IServices
 @using Microsoft.EntityFrameworkCore
@@ -10,13 +11,13 @@
 <h1>Artists</h1>
 <!-- ---------- Search filter ---------------------------- -->
     <p>
-    Artist: <input type="text" name="SearchString" @bind="SearchFilter" />
+    Artist: <input type="text" name="SearchString" @bind="searchFilter" />
     <button class="btn btn-success" @onclick="@(() => GetArtists())" @onclick:preventDefault>Filter</button>
     <button class="btn btn-success" @onclick="@(() => ClearSearch())" @onclick:preventDefault>Clear</button>
     </p>
 
 
-@if (Artists == null)
+@if (artists == null)
 {
     <Loading />
 }
@@ -30,11 +31,11 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var artist in Artists)
+            @foreach (var artist in artists)
             {
                 <tr>
                     <td><a href="Artist/@artist.ArtistId">@artist.Name</a></td>
-                    <td>@artist.Albums.Count()</td>
+                    <td>@artist.AlbumCount</td>
                 </tr>
             }
         </tbody>
@@ -42,14 +43,13 @@ else
 }
 
 @code {
-    private List<Artist> Artists;
-    //[Inject] IDbContextFactory<ChinookContext> DbFactory { get; set; }
+    private List<ArtistCM> artists;
 
     // -------------- Injecting the services --------------------
-    [Inject] IArtistService ArtistService { get; set; }
-    [Inject] IAlbumService AlbumService { get; set; }
+    [Inject] IArtistService artistService { get; set; }
+    [Inject] IAlbumService albumService { get; set; }
 
-    private string SearchFilter;
+    private string searchFilter;
 
     protected override async Task OnInitializedAsync()
     {
@@ -61,7 +61,7 @@ else
     /// </summary>
     public async void GetArtists()
     {
-        Artists = await ArtistService.GetArtists(SearchFilter);
+        artists = await artistService.GetArtists(searchFilter);
     }
 
     /// <summary>
@@ -69,12 +69,12 @@ else
     /// </summary>
     public async void ClearSearch()
     {
-        SearchFilter = string.Empty;
-        Artists = await ArtistService.GetArtists(SearchFilter);
+        searchFilter = string.Empty;
+        artists = await artistService.GetArtists(searchFilter);
     }
     // --------- Did not use -----------------
     public async Task<List<Album>> GetAlbumsForArtist(int artistId)
     {
-        return await AlbumService.GetAlbumsForArtist(artistId);
+        return await albumService.GetAlbumsForArtist(artistId);
     }
 }

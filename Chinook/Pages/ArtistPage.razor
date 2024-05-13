@@ -7,25 +7,25 @@
 @using System.Security.Claims;
 @using Chinook.IServices;
 
-@if (!string.IsNullOrWhiteSpace(InfoMessage))
+@if (!string.IsNullOrWhiteSpace(infoMessage))
 {
     <div class="alert alert-info fade show">
         <div class="d-flex align-items-start">
             <div class="flex-grow-1">
-                @InfoMessage
+                @infoMessage
             </div>
             <button type="button" class="btn-close" aria-label="Close" @onclick="CloseInfoMessage"></button>
         </div>
     </div>
 }
 
-@if (Artist == null)
+@if (artist == null)
 {
     <Loading />
 }
 else
 {
-    <h1>@Artist.Name</h1>
+    <h1>@artist.Name</h1>
     <table class="table table-striped table-hover table-sm">
         <thead>
             <tr>
@@ -35,7 +35,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var track in Tracks)
+            @foreach (var track in tracks)
             {
                 <tr>
                     <td>@track.AlbumTitle</td>
@@ -58,26 +58,26 @@ else
     </table>
 }
 
-<Modal @ref="PlaylistDialog">
+<Modal @ref="playlistDialog">
     <Title>Add to playlist</Title>
     <Body>
-        @if (SelectedTrack != null)
+        @if (selectedTrack != null)
         {
             <div class="form-group mb-2">
-                <label>@Artist.Name - @SelectedTrack.AlbumTitle - @SelectedTrack.TrackName</label>
+                <label>@artist.Name - @selectedTrack.AlbumTitle - @selectedTrack.TrackName</label>
             </div>
         }
 
         <div class="mb-2">
             <label for="ExistingPlaylist">Add to existing playlist</label>
             @*---- Using @bind attribute to track select value instead of onchange---------*@
-            <select class="form-control" id="ExistingPlaylist" @bind="SelectedPlaylistId">
+            <select class="form-control" id="ExistingPlaylist" @bind="selectedPlaylistId">
                 @* Empty option to be displayed till a valid selection is done *@
-                @if (SelectedPlaylistId == -1)
+                @if (selectedPlaylistId == -1)
                 {
                     <option value="-1"></option>
                 }
-                @foreach (var playlist in SelectedPlaylists)
+                @foreach (var playlist in selectedPlaylists)
                 {
                     <option value="@playlist.PlaylistId">@playlist.Name</option>
                 }
@@ -86,11 +86,11 @@ else
         <div class="mb-2">
             <label for="NewPlaylist">Create new playlist</label>
             <!-- ------ Binding the text field to PlayListName ----------- -->
-            <input type="text" id="NewPlaylist" @bind:event="oninput" class="form-control" @bind="PlaylistName" placeholder="Name for the new playlist">
+            <input type="text" id="NewPlaylist" @bind:event="oninput" class="form-control" @bind="playlistName" placeholder="Name for the new playlist">
         </div>
     </Body>
     <Footer>
-        @if (DisableByDropDown && DisableByText)
+        @if (disableByDropDown && disableByText)
         {
             <button class="btn btn-success" @onclick="AddTrackToPlaylist" disabled>Save</button>
         }
@@ -105,65 +105,55 @@ else
 @code {
     [Parameter] public long ArtistId { get; set; }
     [CascadingParameter] private Task<AuthenticationState> authenticationState { get; set; }
-    //[Inject] IDbContextFactory<ChinookContext> DbFactory { get; set; }
 
     //Injecting the services to Razor page
-    [Inject] IArtistService ArtistService { get; set; }
-    [Inject] ITrackService TrackService { get; set; }
-    [Inject] IPlaylistService PlaylistService { get; set; }
-    [Inject] IRefreshNavService RefreshNavService { get; set; }
-    private Modal PlaylistDialog { get; set; }
+    [Inject] IArtistService artistService { get; set; }
+    [Inject] ITrackService trackService { get; set; }
+    [Inject] IPlaylistService playlistService { get; set; }
+    [Inject] IRefreshNavService refreshNavService { get; set; }
+    private Modal playlistDialog { get; set; }
 
-    private Artist Artist;
-    private List<PlaylistTrack> Tracks;
-    //private DbContext DbContext;
-    private PlaylistTrack SelectedTrack;
-    private List<Models.Playlist> SelectedPlaylists;
-    private string InfoMessage;
-    private string CurrentUserId;
+    private ArtistCM artist;
+    private List<PlaylistTrackCM> tracks;
+    private PlaylistTrackCM selectedTrack;
+    private List<PlaylistCM> selectedPlaylists;
+    private string infoMessage;
+    private string currentUserId;
 
-    private bool DisableByText, DisableByDropDown;
+    private bool disableByText, disableByDropDown;
     private long _selecedPlaylistId;
-    public long SelectedPlaylistId
+    public long selectedPlaylistId
     {
         get { return _selecedPlaylistId; }
         set
         {
             _selecedPlaylistId = value;
-            DisableByDropDown = _selecedPlaylistId < 0 ? true : false;
+            disableByDropDown = _selecedPlaylistId < 0 ? true : false;
         }
     }
     private string _playlistName;
-    private string PlaylistName
+    private string playlistName
     {
         get { return _playlistName; }
         set
         {
             _playlistName = value;
-            DisableByText = _playlistName?.Length < 1 ? true : false;
+            disableByText = _playlistName?.Length < 1 ? true : false;
         }
 
     }
 
     protected override async Task OnInitializedAsync()
     {
-        SelectedPlaylistId = -1;
-        DisableByDropDown = true;
-        DisableByText = true;
+        selectedPlaylistId = -1;
+        disableByDropDown = true;
+        disableByText = true;
         await InvokeAsync(StateHasChanged);
-        CurrentUserId = await GetUserId();
+        currentUserId = await GetUserId();
         //----------- Load values from the backend --------------
-        Artist = await ArtistService.GetArtistById(ArtistId);
-        Tracks = await TrackService.GetPlaylistTracks(ArtistId, CurrentUserId);
-        SelectedPlaylists = await PlaylistService.GetPlaylistsOfUser(CurrentUserId);
-
-        /* //------------ Set the first element's id of the list as the default playlist -------------
-        if (SelectedPlaylists.Any())
-        {
-            SelectedPlaylistId = SelectedPlaylists
-            .First()
-            .PlaylistId;
-        }*/
+        artist = await artistService.GetArtistById(ArtistId);
+        tracks = await trackService.GetPlaylistTracks(ArtistId, currentUserId);
+        selectedPlaylists = await playlistService.GetPlaylistsOfUser(currentUserId);
     }
 
     private async Task<string> GetUserId()
@@ -179,15 +169,13 @@ else
     /// <param name="trackId"></param>
     private async void FavoriteTrack(long trackId)
     {
-        var track = Tracks.FirstOrDefault(t => t.TrackId == trackId);
-
-        // TODO: add track to Favorites playlist
+        var track = tracks.FirstOrDefault(t => t.TrackId == trackId);
         // ----- Add to favourite list and reload tracks -------
-        var message = await TrackService.AddToMyFavourite(trackId, CurrentUserId);
-        Tracks = await TrackService.GetPlaylistTracks(ArtistId, CurrentUserId);
-        InfoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} {message}";
+        var message = await trackService.AddToMyFavourite(trackId, currentUserId);
+        tracks = await trackService.GetPlaylistTracks(ArtistId, currentUserId);
+        infoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} {message}";
         //Triger call back event to update nav menu
-        RefreshNavService.CallRequestRefresh();
+        refreshNavService.CallRequestRefresh();
     }
     /// <summary>
     /// Remove from my favourite playlist
@@ -195,25 +183,23 @@ else
     /// <param name="trackId"></param>
     private async void UnfavoriteTrack(long trackId)
     {
-        var track = Tracks.FirstOrDefault(t => t.TrackId == trackId);
-
-        // TODO: remove track from Favorites playlist
+        var track = tracks.FirstOrDefault(t => t.TrackId == trackId);
         // ----- Remove from favourite list and reload tracks -------
-        var message = await TrackService.RemoveFromMyFavourite(trackId, CurrentUserId);
-        Tracks = await TrackService.GetPlaylistTracks(ArtistId, CurrentUserId);
-        InfoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} {message}";
+        var message = await trackService.RemoveFromMyFavourite(trackId, currentUserId);
+        tracks = await trackService.GetPlaylistTracks(ArtistId, currentUserId);
+        infoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} {message}";
     }
 
     private void OpenPlaylistDialog(long trackId)
     {
         CloseInfoMessage();
-        if (Tracks.Any())
+        if (tracks.Any())
         {
-            SelectedTrack = Tracks.First(t => t.TrackId == trackId);
+            selectedTrack = tracks.First(t => t.TrackId == trackId);
         }
-        SelectedPlaylistId = -1;
-        PlaylistName = string.Empty;
-        PlaylistDialog.Open();
+        selectedPlaylistId = -1;
+        playlistName = string.Empty;
+        playlistDialog.Open();
     }
 
     /// <summary>
@@ -221,35 +207,21 @@ else
     /// </summary>
     private async void AddTrackToPlaylist()
     {
-        // TODO
-
         CloseInfoMessage();
         // ----- Add tracks to playlist and reload the selected playlists -------
-        var message = await PlaylistService.AddTrackToPlayList(SelectedTrack.TrackId, SelectedPlaylistId, PlaylistName, CurrentUserId);
-        InfoMessage = $"Track {Artist.Name} - {SelectedTrack.AlbumTitle} - {SelectedTrack.TrackName} {message}.";
-        SelectedPlaylists = await PlaylistService.GetPlaylistsOfUser(CurrentUserId);
-        PlaylistName = string.Empty;
-        PlaylistDialog.Close();
-        SelectedPlaylistId = -1;
+        var message = await playlistService.AddTrackToPlayList(selectedTrack.TrackId, selectedPlaylistId, playlistName, currentUserId);
+        infoMessage = $"Track {artist.Name} - {selectedTrack.AlbumTitle} - {selectedTrack.TrackName} {message}.";
+        selectedPlaylists = await playlistService.GetPlaylistsOfUser(currentUserId);
+        playlistName = string.Empty;
+        playlistDialog.Close();
+        selectedPlaylistId = -1;
         //Triger call back event to update nav menu
-        RefreshNavService.CallRequestRefresh();
+        refreshNavService.CallRequestRefresh();
     }
 
-    /// <summary>
-    /// Method for capturing playlist dropdown change
-    /// </summary>
-    /// <param name="e"></param>
-    /* private void OnPlayListChanghe(ChangeEventArgs e)
-    {
-        // ------ To capture playlist id change from the dropdown ------
-        //long playlistId = 0;
-        long.TryParse(e?.Value?.ToString(), out long playlistId);
-        SelectedPlaylistId = playlistId;
-        DisableByDropDown = !SelectedPlaylists.Any(p => p.PlaylistId == playlistId);
-    }*/
 
     private void CloseInfoMessage()
     {
-        InfoMessage = "";
+        infoMessage = "";
     }
 }

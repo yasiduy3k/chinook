@@ -1,4 +1,5 @@
-﻿@using Chinook.Models
+﻿@using Chinook.ClientModels
+@using Chinook.Models
 @using Chinook.IServices;
 @using System.Security.Claims
 
@@ -11,7 +12,7 @@
     </div>
 </div>
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+<div class="@navMenuCssClass" @onclick="ToggleNavMenu">
     <nav class="flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
@@ -21,19 +22,12 @@
         <div class="nav-item px-3" style=" height: 500px; overflow-y: auto;">
             <hr style="color:white" />
             <p style="color:#d7d7d7">My Playlists</p>
-            <hr style="color:white" />
-            @*
-            <NavLink class="nav-link" href="playlist/playlistnumber">
-            <i class="bi bi-music-note-list me-3" style="font-size: 1.25em"></i>My favorite tracks
-            </NavLink>
-            *@
+            <hr style="color:white" />          
 
-            @foreach (var playlist in SelectedPlaylists)
+            @foreach (var playlist in selectedPlaylists)
             {
                 var link = "playlist/" + @playlist.PlaylistId;
-
                 <NavLink class="nav-link" href="@link">
-                    <!--href="playlist/0"-->
                     <i class="bi bi-music-note-list me-3" style="font-size: 1.25em"></i>@playlist.Name
                 </NavLink>
             }
@@ -44,15 +38,15 @@
 
 
 @code {
-    [Inject] IPlaylistService PlaylistService { get; set; }
-    [Inject] IRefreshNavService RefreshNavService { get; set; }
+    [Inject] IPlaylistService playlistService { get; set; }
+    [Inject] IRefreshNavService refreshNavService { get; set; }
     [CascadingParameter] private Task<AuthenticationState> authenticationState { get; set; }
-    private List<Models.Playlist> SelectedPlaylists;
+    private List<PlaylistCM> selectedPlaylists;
 
-    private string CurrentUserId;
+    private string currentUserId;
     private bool collapseNavMenu = true;
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    private string? navMenuCssClass => collapseNavMenu ? "collapse" : null;
 
     private void ToggleNavMenu()
     {
@@ -62,14 +56,14 @@
     protected override async Task OnInitializedAsync()
     {
         await InvokeAsync(StateHasChanged);
-        CurrentUserId = await GetUserId();
+        currentUserId = await GetUserId();
         //----------- Load values from the backend --------------
-        SelectedPlaylists = await PlaylistService.GetPlaylistsOfUser(CurrentUserId);
+        selectedPlaylists = await playlistService.GetPlaylistsOfUser(currentUserId);
 
         // Un subscrib from event
-        RefreshNavService.RefreshRequested -= RefreshAndRenderNavMenu;
+        refreshNavService.RefreshRequested -= RefreshAndRenderNavMenu;
         // subscribe to event
-        RefreshNavService.RefreshRequested += RefreshAndRenderNavMenu;
+        refreshNavService.RefreshRequested += RefreshAndRenderNavMenu;
     }
 
     private async Task<string> GetUserId()
@@ -85,7 +79,7 @@
     private async void RefreshAndRenderNavMenu()
     {
         //----------- Load values from the backend --------------
-        SelectedPlaylists = await PlaylistService.GetPlaylistsOfUser(CurrentUserId);
+        selectedPlaylists = await playlistService.GetPlaylistsOfUser(currentUserId);
         await InvokeAsync(StateHasChanged);
     }
 }

@@ -9,7 +9,7 @@ namespace Chinook.Services
     {
         private IDBContextService dbContextService { get; set; }
         private ILogger<AlbumService> logger { get; set; }
-        public ArtistService(ILogger<AlbumService> logger ,IDBContextService dbContextService)
+        public ArtistService(ILogger<AlbumService> logger, IDBContextService dbContextService)
         {
             this.dbContextService = dbContextService;
             this.logger = logger;
@@ -20,7 +20,7 @@ namespace Chinook.Services
         /// <param name="searchFilter"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public async Task<List<Artist>> GetArtists(string searchFilter)
+        public async Task<List<ArtistCM>> GetArtists(string searchFilter)
         {
             try
             {
@@ -29,14 +29,16 @@ namespace Chinook.Services
                 if (string.IsNullOrWhiteSpace(searchFilter))
                 {
                     return dbContext.Artists.Include(a => a.Albums)
-                        .OrderBy(a=>a.Name)
+                        .Select(a => new ArtistCM { ArtistId = a.ArtistId, Name = a.Name, AlbumCount = a.Albums.Count })
+                        .OrderBy(a => a.Name)
                         .ToList();
                 }
                 else
                 {
                     return dbContext.Artists
                         .Include(a => a.Albums)
-                        .Where(a => a.Name!=null && a.Name.ToLower().Contains(searchFilter.ToLower()))
+                        .Where(a => a.Name != null && a.Name.ToLower().Contains(searchFilter.ToLower()))
+                        .Select(a => new ArtistCM { ArtistId = a.ArtistId, Name = a.Name, AlbumCount = a.Albums.Count })
                         .OrderBy(a => a.Name)
                         .ToList();
                 }
@@ -54,12 +56,15 @@ namespace Chinook.Services
         /// <param name="artistId"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public async Task<Artist> GetArtistById(long artistId)
+        public async Task<ArtistCM> GetArtistById(long artistId)
         {
             try
             {
                 var dbContext = await dbContextService.GetContextAsync();
-                var artist = dbContext.Artists.SingleOrDefault(x => x.ArtistId == artistId);
+                var artist = dbContext.Artists
+                    .Where(a => a.ArtistId == artistId)
+                    .Select(a => new ArtistCM { ArtistId = a.ArtistId, Name = a.Name })
+                    .SingleOrDefault();
                 return artist;
             }
             catch (Exception ex)

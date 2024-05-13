@@ -16,3 +16,10 @@ When creating a user account, you will see this:
 After you click 'Click here to confirm your account' you should be able to login.
 
 Please send us a zip file with the modified solution when you are done. You can also upload it to your own GitHub account and send us the link.
+
+Approach
+~~~~~~~~~~
+1. Move database constructor to backend and use a single service to call and implement the context.
+2. View each module ex: album, artist, track, as a set of services and implement each service seperately.
+3. Use dependency injection to coordinate between the services
+4. Use ClientModels or DTO's to frontend responses to avoid data load and unecessary exposing of data model to the UI.

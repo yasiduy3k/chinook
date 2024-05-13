@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject NavigationManager NavigationManager
 
+@using Chinook.ClientModels
 @using Chinook.Models
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims;
@@ -9,22 +10,22 @@
 @using Chinook.Statics
 
 <div>
-    <h1>Playlist <strong>@Playlist.Name</strong> <a href="#" style="float:right" class="m-1" title="Remove playlist" @onclick="@(() => DeletePlayList())" @onclick:preventDefault><i class="bi bi-trash"></i></a></h1>
+    <h1>Playlist <strong>@playlist.Name</strong> <a href="#" style="float:right" class="m-1" title="Remove playlist" @onclick="@(() => DeletePlayList())" @onclick:preventDefault><i class="bi bi-trash"></i></a></h1>
 </div>
 
-@if (!string.IsNullOrWhiteSpace(InfoMessage))
+@if (!string.IsNullOrWhiteSpace(infoMessage))
 {
     <div class="alert alert-info fade show">
         <div class="d-flex align-items-start">
             <div class="flex-grow-1">
-                @InfoMessage
+                @infoMessage
             </div>
             <button type="button" class="btn-close" aria-label="Close" @onclick="CloseInfoMessage"></button>
         </div>
     </div>
 }
 
-@if (Playlist == null)
+@if (playlist == null)
 {
     <Loading />
 }
@@ -38,14 +39,14 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var track in Playlist.Tracks)
+            @foreach (var track in playlist.Tracks)
             {
                 <tr>
                     <td>@track.ArtistName - @track.AlbumTitle - @track.TrackName</td>
                     <td>
                         <div class="d-flex">
                             <!-- ----- Using the constant defined to track the playlist name. Readme gives one name but code had one name. ------- -->
-                            @if (Playlist.Name != Constants.FavouritePlayListName)
+                            @if (playlist.Name != Constants.FavouritePlayListName)
                             {
                                 @if (track.IsFavorite)
                                 {
@@ -68,17 +69,16 @@ else
 
 @code {
     [Parameter] public long PlaylistId { get; set; }
-    //[Inject] IDbContextFactory<ChinookContext> DbFactory { get; set; }
 
     //-----  Injecting the services ----------------------
-    [Inject] ITrackService TrackService { get; set; }
-    [Inject] IPlaylistService PlaylistService { get; set; }
-    [Inject] IRefreshNavService RefreshNavService { get; set; }
+    [Inject] ITrackService trackService { get; set; }
+    [Inject] IPlaylistService playlistService { get; set; }
+    [Inject] IRefreshNavService refreshNavService { get; set; }
     [CascadingParameter] private Task<AuthenticationState> authenticationState { get; set; }
 
-    private Chinook.ClientModels.Playlist Playlist;
-    private string CurrentUserId;
-    private string InfoMessage;
+    private PlaylistCM playlist;
+    private string currentUserId;
+    private string infoMessage;
 
 
     //----- This was teseted by using the direct url with a playlist number -----
@@ -86,15 +86,15 @@ else
     // Please note did not handle for instances of using playlist number not available in db
     protected override async Task OnInitializedAsync()
     {
-        CurrentUserId = await GetUserId();
+        currentUserId = await GetUserId();
         await InvokeAsync(StateHasChanged);
         //------- Loading play list -----------------------------
-        Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
+        playlist = await playlistService.GetPlaylist(PlaylistId, currentUserId);
     }
     protected override async Task OnParametersSetAsync()
     {
         //----------- Load values from the backend --------------
-        Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
+        playlist = await playlistService.GetPlaylist(PlaylistId, currentUserId);
         CloseInfoMessage();
     }
     private async Task<string> GetUserId()
@@ -109,15 +109,15 @@ else
     /// <param name="trackId"></param>
     private async void FavoriteTrack(long trackId)
     {
-        var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
+        var track = playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
 
         // TODO: add track to Favorites playlist
         // ------ Reusing the services written -----------------
-        var message = await TrackService.AddToMyFavourite(trackId, CurrentUserId);        
-        Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
-        InfoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} {message}";
+        var message = await trackService.AddToMyFavourite(trackId, currentUserId);        
+        playlist = await playlistService.GetPlaylist(PlaylistId, currentUserId);
+        infoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} {message}";
         //Triger call back event to update nav menu
-        RefreshNavService.CallRequestRefresh();
+        refreshNavService.CallRequestRefresh();
     }
     /// <summary>
     /// Remove from my favourite playlist
@@ -125,13 +125,13 @@ else
     /// <param name="trackId"></param>
     private async void UnfavoriteTrack(long trackId)
     {
-        var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
+        var track = playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
 
         // TODO: remove track from Favorites playlist
         // ------ Reusing the services written -----------------
-        var message = await TrackService.RemoveFromMyFavourite(trackId, CurrentUserId);
-        Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
-        InfoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} {message}";
+        var message = await trackService.RemoveFromMyFavourite(trackId, currentUserId);
+        playlist = await playlistService.GetPlaylist(PlaylistId, currentUserId);
+        infoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} {message}";
     }
     /// <summary>
     /// Remove the track from the viewed playlist
@@ -141,15 +141,15 @@ else
     {
         // TODO
         // --------- Remove the track from playlist and reload the playlist --------
-        var track = Playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
-        var message = await PlaylistService.RemoveTrack(PlaylistId, trackId);
-        Playlist = await PlaylistService.GetPlaylist(PlaylistId, CurrentUserId);
-        InfoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} of playlist {Playlist.Name} {message}";
+        var track = playlist.Tracks.FirstOrDefault(t => t.TrackId == trackId);
+        var message = await playlistService.RemoveTrack(PlaylistId, trackId);
+        playlist = await playlistService.GetPlaylist(PlaylistId, currentUserId);
+        infoMessage = $"Track {track?.ArtistName} - {track?.AlbumTitle} - {track?.TrackName} of playlist {playlist.Name} {message}";
     }
 
     private void CloseInfoMessage()
     {
-        InfoMessage = "";
+        infoMessage = "";
     }
 
     /// <summary>
@@ -157,9 +157,9 @@ else
     /// </summary>
     private async void DeletePlayList()
     {
-        await PlaylistService.DeletePlayList(PlaylistId);
+        await playlistService.DeletePlayList(PlaylistId);
         //Triger call back event to update nav menu
-        RefreshNavService.CallRequestRefresh();
+        refreshNavService.CallRequestRefresh();
         NavigationManager.NavigateTo("/");
     }
 

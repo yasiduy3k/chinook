@@ -23,7 +23,7 @@ namespace Chinook.Services
         /// <param name="userId"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public async Task<ClientModels.Playlist> GetPlaylist(long playlistId, string userId)
+        public async Task<PlaylistCM> GetPlaylist(long playlistId, string userId)
         {
             try
             {
@@ -33,10 +33,11 @@ namespace Chinook.Services
                     .ThenInclude(a => a.Album)
                     .ThenInclude(a => a.Artist)
                     .Where(p => p.PlaylistId == playlistId)
-               .Select(p => new ClientModels.Playlist()
+               .Select(p => new PlaylistCM()
                {
+                   PlaylistId = p.PlaylistId,
                    Name = p.Name == null ? "" : p.Name,
-                   Tracks = p.Tracks.Select(t => new PlaylistTrack()
+                   Tracks = p.Tracks.Select(t => new PlaylistTrackCM()
                    {
                        AlbumTitle = t.Album == null ? "" : t.Album.Title,
                        ArtistName = t.Album == null ? "" : t.Album.Artist == null ? "" : t.Album.Artist.Name == null ? "" : t.Album.Artist.Name,
@@ -111,8 +112,8 @@ namespace Chinook.Services
         /// <param name="userId"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        //--- This should be refactored to use name value pair (used for drop down) to make t light weight ------
-        public async Task<List<Models.Playlist>> GetPlaylistsOfUser(string userId)
+        //--- This should be refactored to use name value pair (used for drop down) to make it light weight ------
+        public async Task<List<PlaylistCM>> GetPlaylistsOfUser(string userId)
         {
             try
             {
@@ -120,7 +121,8 @@ namespace Chinook.Services
                 var playlists = dbContext.Playlists
                     .Include(p => p.UserPlaylists)
                     .Where(p => p.UserPlaylists.Any(up => up.UserId == userId))
-                    .OrderByDescending(p=>p.Name==Constants.FavouritePlayListName) //Order to keep fav playlist always as the top
+                    .Select(p=> new PlaylistCM { PlaylistId = p.PlaylistId, Name=p.Name })
+                    .OrderByDescending(p => p.Name == Constants.FavouritePlayListName) //Order to keep fav playlist always as the top
                     .ThenBy(p => p.Name)
                     .ToList();
                 return playlists;
@@ -140,7 +142,7 @@ namespace Chinook.Services
         /// <param name="playlistName"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        //--- Giving prominancy no new playlist name used for the moment ----
+        //--- Giving prominancy to new playlist name used for the moment ----
         //--- Ideally UI should be restricted to handle this --------
         public async Task<string> AddTrackToPlayList(long trackId, long playlistId, string playlistName, string userId)
         {

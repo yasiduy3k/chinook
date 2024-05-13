@@ -17,12 +17,12 @@ builder.Services.AddDefaultIdentity<ChinookUser>(options => options.SignIn.Requi
     .AddEntityFrameworkStores<ChinookContext>();
 
 //Dependency injection
-builder.Services.AddSingleton<IArtistService,ArtistService>();
-builder.Services.AddSingleton<IAlbumService, AlbumService>();
-builder.Services.AddSingleton<IDBContextService, DbContextService>();
-builder.Services.AddSingleton<ITrackService, TrackService>();
-builder.Services.AddSingleton<IPlaylistService, PlaylistService>();
-builder.Services.AddSingleton<IRefreshNavService, RefreshNavService>();
+builder.Services.AddScoped<IArtistService,ArtistService>();
+builder.Services.AddScoped<IAlbumService, AlbumService>();
+builder.Services.AddScoped<IDBContextService, DbContextService>();
+builder.Services.AddScoped<ITrackService, TrackService>();
+builder.Services.AddScoped<IPlaylistService, PlaylistService>();
+builder.Services.AddScoped<IRefreshNavService, RefreshNavService>();
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
