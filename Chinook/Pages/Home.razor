@@ -10,11 +10,11 @@
 
 <h1>Artists</h1>
 <!-- ---------- Search filter ---------------------------- -->
-    <p>
+<p>
     Artist: <input type="text" name="SearchString" @bind="searchFilter" />
     <button class="btn btn-success" @onclick="@(() => GetArtists())" @onclick:preventDefault>Filter</button>
     <button class="btn btn-success" @onclick="@(() => ClearSearch())" @onclick:preventDefault>Clear</button>
-    </p>
+</p>
 
 
 @if (artists == null)
@@ -44,6 +44,7 @@ else
 
 @code {
     private List<ArtistCM> artists;
+    private List<ArtistCM> allArtists;
 
     // -------------- Injecting the services --------------------
     [Inject] IArtistService artistService { get; set; }
@@ -61,7 +62,22 @@ else
     /// </summary>
     public async void GetArtists()
     {
-        artists = await artistService.GetArtists(searchFilter);
+        if (allArtists == null)
+        {
+            allArtists = await artistService.GetArtists(string.Empty);
+        }
+
+        if (string.IsNullOrWhiteSpace(searchFilter))
+        {
+            artists = allArtists;
+        }
+        else
+        {
+            artists = allArtists
+            .Where(a => a.Name.Contains(searchFilter, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(a => a.Name)
+            .ToList();
+        }
     }
 
     /// <summary>
@@ -70,7 +86,7 @@ else
     public async void ClearSearch()
     {
         searchFilter = string.Empty;
-        artists = await artistService.GetArtists(searchFilter);
+        GetArtists();
     }
     // --------- Did not use -----------------
     public async Task<List<Album>> GetAlbumsForArtist(int artistId)
